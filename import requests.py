@@ -1,66 +1,71 @@
 import requests
+import os
 
-# Configuration
+# Your Personal Info
+NAME = "Sarthak Kacholiya"
+REG_NO = "0827IT221132"
+EMAIL = "sarthakkacholiya220758@acropolis.in"
 
-NAME = "Your Name"
-REG_NO = "REG12347"
-EMAIL = "your.email@example.com"
+# Step 1: Generate Webhook
+def generate_webhook():
+    print("🔗 Generating webhook...")
 
-# 1. Generate Webhook
-
-print("Sending request to generate webhook...")
-
-response = requests.post(
-    "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/PYTHON",
-    json={
+    url = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/PYTHON"
+    payload = {
         "name": NAME,
         "regNo": REG_NO,
         "email": EMAIL
     }
-)
 
-if response.status_code != 200:
-    print("Failed to generate webhook:", response.text)
-    exit()
+    response = requests.post(url, json=payload)
 
-data = response.json()
-webhook_url = data['webhook']
-access_token = data['accessToken']
+    if response.status_code == 200:
+        data = response.json()
+        print("Webhook generated successfully.")
+        print("Webhook URL:", data.get("webhook"))
+        print("Access Token:", data.get("accessToken"))
+        return data["accessToken"]
+    else:
+        print(" Failed to generate webhook:", response.text)
+        exit()
 
-print("Webhook generated successfully!")
-print("Webhook URL:", webhook_url)
-print("Access Token:", access_token)
+# -----------------------------
+# Step 2: Load SQL Query
+# -----------------------------
+def load_sql_query():
+    sql_path = os.path.join("..", "sql", "solution.sql")
+    if not os.path.exists(sql_path):
+        print(f" SQL file not found at {sql_path}")
+        exit()
+    
+    with open(sql_path, "r") as file:
+        query = file.read().strip()
+    print("Loaded SQL query.")
+    return query
 
+# Step 3: Submit Final Query
+def submit_query(access_token, final_query):
+    print("📤 Submitting final SQL query...")
 
-# Based on REG_NO last digit:
-#   Odd → Question 1
-#   Even → Question 2
+    url = "https://bfhldevapigw.healthrx.co.in/hiring/testWebhook/PYTHON"
+    headers = {
+        "Authorization": access_token,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "finalQuery": final_query
+    }
 
-print("\nGo to the appropriate SQL question link:")
-print("- Odd → https://drive.google.com/file/d/1q8F8g0EpyNzd5BWk-voe5CKbsxoskJWY/view?usp=sharing")
-print("- Even → https://drive.google.com/file/d/1PO1ZvmDqAZJv77XRYsVben11Wp2HVb/view?usp=sharing")
+    response = requests.post(url, headers=headers, json=payload)
 
-# Read SQL query from file
-with open("../sql/solution.sql", "r") as file:
-    final_sql_query = file.read().strip()
+    if response.status_code == 200:
+        print("Submission successful!")
+        print("Response:", response.json())
+    else:
+        print("Submission failed:", response.text)
 
-
-# 3. Submit SQL Query
-
-print("\nSubmitting final SQL query...")
-
-headers = {
-    "Authorization": access_token,
-    "Content-Type": "application/json"
-}
-
-submission_response = requests.post(
-    "https://bfhldevapigw.healthrx.co.in/hiring/testWebhook/PYTHON",
-    headers=headers,
-    json={"finalQuery": final_sql_query}
-)
-
-if submission_response.status_code == 200:
-    print("Submission successful!")
-else:
-    print("Submission failed:", submission_response.text)
+# Main Logic
+if __name__ == "__main__":
+    token = generate_webhook()
+    query = load_sql_query()
+    submit_query(token, query)
